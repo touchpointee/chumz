@@ -1,0 +1,389 @@
+const SHOPIFY_API_VERSION = '2025-07';
+const SHOPIFY_STORE_PERMANENT_DOMAIN = 'chumz-comfort-shop-it1mm.myshopify.com';
+const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
+const SHOPIFY_STOREFRONT_TOKEN = '60ec1e02e4bff1d75357a1fbb8249a0f';
+
+export interface ShopifyProduct {
+  node: {
+    id: string;
+    title: string;
+    description: string;
+    handle: string;
+    priceRange: {
+      minVariantPrice: {
+        amount: string;
+        currencyCode: string;
+      };
+    };
+    images: {
+      edges: Array<{
+        node: {
+          url: string;
+          altText: string | null;
+        };
+      }>;
+    };
+    variants: {
+      edges: Array<{
+        node: {
+          id: string;
+          title: string;
+          price: {
+            amount: string;
+            currencyCode: string;
+          };
+          availableForSale: boolean;
+          selectedOptions: Array<{
+            name: string;
+            value: string;
+          }>;
+        };
+      }>;
+    };
+    options: Array<{
+      name: string;
+      values: string[];
+    }>;
+  };
+}
+
+export async function storefrontApiRequest(query: string, variables: any = {}) {
+  const response = await fetch(SHOPIFY_STOREFRONT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN
+    },
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.errors) {
+    throw new Error(`Error calling Shopify: ${data.errors.map((e: any) => e.message).join(', ')}`);
+  }
+
+  return data;
+}
+
+const PRODUCTS_QUERY = `
+  query GetProducts($first: Int!) {
+    products(first: $first) {
+      edges {
+        node {
+          id
+          title
+          description
+          handle
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          images(first: 5) {
+            edges {
+              node {
+                url
+                altText
+              }
+            }
+          }
+          variants(first: 10) {
+            edges {
+              node {
+                id
+                title
+                price {
+                  amount
+                  currencyCode
+                }
+                availableForSale
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+          }
+          options {
+            name
+            values
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const PRODUCT_BY_HANDLE_QUERY = `#graphql
+  query ProductByHandle($handle: String!) {
+    productByHandle(handle: $handle) {
+      id
+      title
+      description
+
+      images(first: 10) {
+        edges {
+          node {
+            url
+            altText
+          }
+        }
+      }
+
+      variants(first: 50) {
+        edges {
+          node {
+            id
+            title
+            price {
+              amount
+              currencyCode
+            }
+            selectedOptions {
+              name
+              value
+            }
+          }
+        }
+      }
+
+      # 👇 NEW metafield section
+      featureImages: metafield(namespace: "custom", key: "feature_images") {
+        id
+        type
+        references(first: 20) {
+          edges {
+            node {
+              ... on MediaImage {
+                id
+                image {
+                  url
+                  altText
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+
+export async function getProducts(limit: number = 20) {
+  const data = await storefrontApiRequest(PRODUCTS_QUERY, { first: limit });
+  return data.data.products.edges as ShopifyProduct[];
+}
+
+export async function getProductByHandle(handle: string) {
+  const data = await storefrontApiRequest(PRODUCT_BY_HANDLE_QUERY, { handle });
+  return data.data.productByHandle;
+}
+
+const CUSTOMER_ACCESS_TOKEN_CREATE_MUTATION = `
+  mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+    customerAccessTokenCreate(input: $input) {
+      customerAccessToken {
+        accessToken
+        expiresAt
+      }
+      customerUserErrors {
+        message
+      }
+    }
+  }
+`;
+
+const CUSTOMER_CREATE_MUTATION = `
+  mutation customerCreate($input: CustomerCreateInput!) {
+    customerCreate(input: $input) {
+      customer {
+        id
+        email
+        firstName
+        lastName
+      }
+      customerUserErrors {
+        message
+      }
+    }
+  }
+`;
+
+const GET_CUSTOMER_QUERY = `
+  query getCustomer($customerAccessToken: String!) {
+    customer(customerAccessToken: $customerAccessToken) {
+      id
+      firstName
+      lastName
+      email
+      phone
+      defaultAddress {
+        address1
+        address2
+        city
+        province
+        zip
+        country
+      }
+    }
+  }
+`;
+
+export async function createCustomerAccessToken(email: string, password: string) {
+  const data = await storefrontApiRequest(CUSTOMER_ACCESS_TOKEN_CREATE_MUTATION, {
+    input: { email, password }
+  });
+  return data.data.customerAccessTokenCreate;
+}
+
+export async function createCustomer(input: any) {
+  const data = await storefrontApiRequest(CUSTOMER_CREATE_MUTATION, { input });
+  return data.data.customerCreate;
+}
+
+export async function getCustomer(accessToken: string) {
+  const data = await storefrontApiRequest(GET_CUSTOMER_QUERY, { customerAccessToken: accessToken });
+  return data.data.customer;
+}
+
+const GET_CUSTOMER_ORDERS_QUERY = `
+  query getCustomerOrders($customerAccessToken: String!) {
+    customer(customerAccessToken: $customerAccessToken) {
+      orders(first: 20, sortKey: PROCESSED_AT, reverse: true) {
+        edges {
+          node {
+            id
+            orderNumber
+            processedAt
+            financialStatus
+            fulfillmentStatus
+            successfulFulfillments(first: 5) {
+              trackingCompany
+              trackingInfo {
+                number
+                url
+              }
+            }
+            totalPrice {
+              amount
+              currencyCode
+            }
+            lineItems(first: 10) {
+              edges {
+                node {
+                  title
+                  quantity
+                  variant {
+                    image {
+                      url
+                      altText
+                    }
+                  }
+                }
+              }
+            }
+            shippingAddress {
+              address1
+              city
+              country
+              zip
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function getCustomerOrders(accessToken: string) {
+  const data = await storefrontApiRequest(GET_CUSTOMER_ORDERS_QUERY, { customerAccessToken: accessToken });
+  return data.data.customer?.orders?.edges?.map((e: any) => e.node) || [];
+}
+
+const GET_ORDER_QUERY = `
+  query getOrder($id: ID!) {
+    node(id: $id) {
+      ... on Order {
+        id
+        orderNumber
+        processedAt
+        financialStatus
+        fulfillmentStatus
+        successfulFulfillments(first: 5) {
+          trackingCompany
+          trackingInfo {
+            number
+            url
+          }
+        }
+        totalPrice {
+          amount
+          currencyCode
+        }
+        subtotalPrice {
+          amount
+          currencyCode
+        }
+        totalShippingPrice {
+          amount
+          currencyCode
+        }
+        totalTax {
+          amount
+          currencyCode
+        }
+        lineItems(first: 20) {
+          edges {
+            node {
+              title
+              quantity
+              originalTotalPrice {
+                amount
+                currencyCode
+              }
+              variant {
+                price {
+                  amount
+                  currencyCode
+                }
+                image {
+                  url
+                  altText
+                }
+                product {
+                  handle
+                }
+              }
+            }
+          }
+        }
+        shippingAddress {
+          firstName
+          lastName
+          address1
+          address2
+          city
+          province
+          zip
+          country
+          phone
+        }
+      }
+    }
+  }
+`;
+
+export async function getOrder(id: string) {
+  const data = await storefrontApiRequest(GET_ORDER_QUERY, { id });
+  return data.data.node;
+}
