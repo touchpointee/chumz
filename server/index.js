@@ -4,44 +4,6 @@ dotenv.config({ path: ".env.local" });
 import http from "http";
 import crypto from "crypto";
 import { URL } from "url";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DIST_DIR = path.join(__dirname, "..", "dist");
-
-const MIME_TYPES = {
-  ".html": "text/html",
-  ".js": "application/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".woff": "font/woff",
-  ".woff2": "font/woff2",
-  ".ttf": "font/ttf",
-  ".webp": "image/webp",
-};
-
-function serveStaticFile(res, filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const contentType = MIME_TYPES[ext] || "application/octet-stream";
-
-  try {
-    const content = fs.readFileSync(filePath);
-    res.writeHead(200, { "Content-Type": contentType });
-    res.end(content);
-  } catch (err) {
-    return false;
-  }
-  return true;
-}
 
 async function readJson(req) {
   return new Promise((resolve, reject) => {
@@ -182,6 +144,18 @@ async function completeDraftOrder(id) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // Add CORS headers for all requests
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (req.method === "POST" && url.pathname === "/api/razorpay/create-order") {
     try {
@@ -264,28 +238,12 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Serve static files from dist folder
-  const requestedPath = url.pathname === "/" ? "/index.html" : url.pathname;
-  const filePath = path.join(DIST_DIR, requestedPath);
-
-  // Try to serve the requested file
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    if (serveStaticFile(res, filePath)) return;
-  }
-
-  // SPA fallback - serve index.html for client-side routing
-  const indexPath = path.join(DIST_DIR, "index.html");
-  if (fs.existsSync(indexPath)) {
-    if (serveStaticFile(res, indexPath)) return;
-  }
-
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: "Not found" }));
 });
 
 const port = process.env.PORT || 8787;
-const host = process.env.HOST || "0.0.0.0";
-server.listen(port, host, () => {
+server.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Server listening on http://${host}:${port}`);
+  console.log(`Server listening on http://localhost:${port}`);
 });
