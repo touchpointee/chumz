@@ -92,6 +92,7 @@ type RazorpayOptions = {
   theme?: {
     color?: string;
   };
+  image?: string;
 };
 
 async function loadRazorpayScript() {
@@ -220,6 +221,7 @@ const Checkout = () => {
       currency: totals.currency || "INR",
       name: "Chumz Comfort Shop",
       description: "Order Payment",
+      image: window.location.origin + "/chumz_logo.png",
       order_id: orderId,
       prefill: {
         name: values.customer.name,
@@ -260,7 +262,7 @@ const Checkout = () => {
           toast.info("Payment window closed");
         },
       },
-      theme: { color: "#ef4444" },
+      theme: { color: "#d35f99" },
     };
 
     try {
