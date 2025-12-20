@@ -49,11 +49,29 @@ const ProductDetail = () => {
   const featureImages =
     product?.featureImages?.references?.edges?.map((edge: any) => edge.node.image) ?? [];
 
-  // prepare description_html: prefer rich HTML, otherwise convert newlines to <br/>
-  // ⚠️ In production, sanitize this HTML (e.g. DOMPurify) before rendering.
-  const descriptionHtml =
-    product?.descriptionHtml ??
-    (product?.description ? product.description.replace(/\r\n|\r|\n/g, "<br/>") : "");
+  /* ---------- DESCRIPTION FORMATTER ---------- */
+  const formatDescription = (description?: string) => {
+    if (!description) {
+      return { paragraph: "", bullets: [] as string[] };
+    }
+
+    let parts: string[] = [];
+
+    if (description.includes("•")) {
+      parts = description.split("•");
+    } else {
+      parts = description.split(/\r?\n/);
+    }
+
+    const cleaned = parts.map((p) => p.trim()).filter(Boolean);
+
+    return {
+      paragraph: cleaned[0] || "",
+      bullets: cleaned.slice(1),
+    };
+  };
+
+  const { paragraph, bullets } = formatDescription(product?.description);
 
   // ---------------- effects (still hooks) ----------------
   // keep active image index valid when images change
@@ -204,9 +222,8 @@ const ProductDetail = () => {
                         key={image.id ?? realIndex}
                         type="button"
                         onClick={() => setActiveImageIndex(realIndex)}
-                        className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden bg-accent border transition-all ${
-                          activeImageIndex === realIndex ? "border-primary ring-2 ring-primary/40" : "border-border/50 hover:border-primary/60"
-                        }`}
+                        className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden bg-accent border transition-all ${activeImageIndex === realIndex ? "border-primary ring-2 ring-primary/40" : "border-border/50 hover:border-primary/60"
+                          }`}
                       >
                         <img src={image.url} alt={`${product.title} thumbnail ${realIndex + 1}`} className="w-full h-full object-cover" />
                       </button>
@@ -241,18 +258,21 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Description */}
-            <div className="prose prose-sm md:prose-base max-w-none">
-              {descriptionHtml ? (
-                // Render HTML (use sanitizer in production)
-                <div
-                  className="text-base md:text-lg text-muted-foreground leading-relaxed font-nunito"
-                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                />
-              ) : (
-                <div className="text-base md:text-lg text-muted-foreground leading-relaxed font-nunito">
-                  Premium quality hygiene product designed for your comfort and wellness.
-                </div>
+            {/* ---------- DESCRIPTION (FIXED) ---------- */}
+            <div className="space-y-4 text-muted-foreground font-nunito">
+              {paragraph && (
+                <p className="text-lg leading-relaxed">{paragraph}</p>
+              )}
+
+              {bullets.length > 0 && (
+                <ul className="space-y-2">
+                  {bullets.map((item, i) => (
+                    <li key={i} className="flex gap-3">
+                      <Check className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 
