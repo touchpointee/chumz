@@ -29,8 +29,18 @@ const ProductDetail = () => {
   // ---------------- all hooks / state (top — stable order) ----------------
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  // visibility of thumbnails based on window size
+  const [visibleThumbsCount, setVisibleThumbsCount] = useState(4);
   const [thumbStart, setThumbStart] = useState(0);
-  const VISIBLE_THUMBS = 4;
+
+  useEffect(() => {
+    const handleResize = () => {
+      setVisibleThumbsCount(window.innerWidth < 380 ? 3 : 4);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // lightbox state (must be declared unconditionally with other hooks)
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -96,8 +106,8 @@ const ProductDetail = () => {
 
     if (activeImageIndex < thumbStart) {
       setThumbStart(activeImageIndex);
-    } else if (activeImageIndex >= thumbStart + VISIBLE_THUMBS) {
-      setThumbStart(activeImageIndex - VISIBLE_THUMBS + 1);
+    } else if (activeImageIndex >= thumbStart + visibleThumbsCount) {
+      setThumbStart(activeImageIndex - visibleThumbsCount + 1);
     }
   }, [activeImageIndex, images.length, thumbStart]);
 
@@ -177,24 +187,24 @@ const ProductDetail = () => {
   };
 
   // thumbnail window slice to display (using thumbStart)
-  const visibleThumbs = images.slice(thumbStart, thumbStart + VISIBLE_THUMBS);
+  const visibleThumbs = images.slice(thumbStart, thumbStart + visibleThumbsCount);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-accent/20 to-background">
+    <div className="min-h-screen bg-gradient-to-b from-background via-accent/20 to-background overflow-x-hidden">
       <Header />
 
-      <div className="container py-12">
-        <Link to="/shop" className="inline-flex items-center text-muted-foreground hover:text-primary mb-8 transition-colors group">
+      <div className="w-full max-w-7xl mx-auto px-4 xs:px-6 sm:container py-8 sm:py-12">
+        <Link to="/shop" className="inline-flex items-center text-muted-foreground hover:text-primary mb-6 sm:mb-8 transition-colors group">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
           Back to Shop
         </Link>
 
-        <div className="grid lg:grid-cols-2 gap-12 lg:items-start">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:items-start">
           {/* Product Images */}
           <div className="flex flex-col gap-4 lg:sticky lg:top-24 self-start lg:max-h-[calc(100vh-6rem)]">
             {/* Main image */}
-            <div className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-br from-accent/30 to-transparent shadow-2xl border-2 border-border/50 flex items-center justify-center h-[360px] md:h-[440px] lg:h-[520px]">
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-2xl pointer-events-none" />
+            <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-br from-accent/30 to-transparent shadow-2xl border-2 border-border/50 flex items-center justify-center h-[280px] sm:h-[360px] md:h-[440px] lg:h-[520px]">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-2xl pointer-events-none" />
 
               {images[activeImageIndex] ? (
                 <img src={images[activeImageIndex].url} alt={product.title} className="relative max-h-full w-auto object-contain" />
@@ -202,7 +212,11 @@ const ProductDetail = () => {
                 <div className="relative w-full h-[260px] flex items-center justify-center text-muted-foreground">No image available</div>
               )}
 
-              <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-bold text-primary shadow-lg">NEW</div>
+              {product.tags && product.tags.length > 0 && (
+                <div className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-white/90 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-primary shadow-lg uppercase">
+                  {product.tags[0]}
+                </div>
+              )}
             </div>
 
             {/* Thumbnails + arrows */}
@@ -222,7 +236,7 @@ const ProductDetail = () => {
                         key={image.id ?? realIndex}
                         type="button"
                         onClick={() => setActiveImageIndex(realIndex)}
-                        className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden bg-accent border transition-all ${activeImageIndex === realIndex ? "border-primary ring-2 ring-primary/40" : "border-border/50 hover:border-primary/60"
+                        className={`relative w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-lg sm:rounded-xl overflow-hidden bg-accent border transition-all ${activeImageIndex === realIndex ? "border-primary ring-2 ring-primary/40" : "border-border/50 hover:border-primary/60"
                           }`}
                       >
                         <img src={image.url} alt={`${product.title} thumbnail ${realIndex + 1}`} className="w-full h-full object-cover" />
@@ -240,7 +254,7 @@ const ProductDetail = () => {
           </div>
 
           {/* Product Info */}
-          <div className="space-y-10">
+          <div className="space-y-6 md:space-y-10">
             {/* Title / rating / price */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -250,11 +264,11 @@ const ProductDetail = () => {
                 <span className="text-sm text-muted-foreground ml-1">(4.9 from 2,500+ reviews)</span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight font-poppins">{product.title}</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-poppins">{product.title}</h1>
 
-              <div className="flex flex-wrap items-baseline gap-4">
-                <p className="text-5xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-none">₹{price}</p>
-                <span className="text-sm md:text-base text-muted-foreground">Inclusive of all taxes · {currency}</span>
+              <div className="flex flex-wrap items-baseline gap-2 sm:gap-4">
+                <p className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-none">₹{price}</p>
+                <span className="text-xs sm:text-sm md:text-base text-muted-foreground">Inclusive of all taxes · {currency}</span>
               </div>
             </div>
 
@@ -277,27 +291,26 @@ const ProductDetail = () => {
             </div>
 
             {/* Trust Badges */}
-            <div className="rounded-3xl bg-white/60 backdrop-blur-md border border-border/60 shadow-soft p-6 md:p-7">
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Why shop with us</p>
-                <span className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary font-medium">100% safe & dermat tested</span>
+            <div className="rounded-2xl sm:rounded-3xl bg-white/60 backdrop-blur-md border border-border/60 shadow-soft p-4 sm:p-6 md:p-7">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 mb-4">
+                <p className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">Why shop with us</p>
+                <span className="text-xs px-2 sm:px-3 py-1 rounded-full bg-primary/10 text-primary font-medium whitespace-nowrap">100% safe & dermat tested</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                 {[{ icon: Shield, text: "Derma Tested" }, { icon: Leaf, text: "Natural Formula" }, { icon: Heart, text: "pH Balanced" }, { icon: Package, text: "Fast Delivery" }].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
-                      <item.icon className="w-4 h-4" />
+                  <div key={i} className="flex items-center gap-2 sm:gap-3">
+                    <span className="inline-flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm flex-shrink-0">
+                      <item.icon className="w-3 h-3 sm:w-4 sm:h-4" />
                     </span>
-                    <span className="text-sm font-medium text-foreground">{item.text}</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground">{item.text}</span>
                   </div>
-                ))}
-              </div>
+                ))}              </div>
             </div>
 
             {/* Add to Cart strip */}
-            <div className="rounded-3xl bg-gradient-to-r from-primary to-secondary p-[1px] shadow-xl">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4 rounded-3xl bg-background/90 px-6 py-4 md:px-8 md:py-5 backdrop-blur">
+            <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-primary to-secondary p-[1px] shadow-xl">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 rounded-2xl sm:rounded-3xl bg-background/90 px-4 py-4 sm:px-6 md:px-8 md:py-5 backdrop-blur">
                 <div className="space-y-1 text-center md:text-left">
                   <p className="text-sm font-semibold text-foreground">Complete your intimate care routine</p>
                   <p className="text-xs md:text-sm text-muted-foreground">Free shipping on eligible orders · Secure checkout</p>
@@ -311,43 +324,43 @@ const ProductDetail = () => {
             </div>
 
             {/* Key Benefits */}
-            <div className="rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/10 via-secondary/10 to-background shadow-soft p-6 md:p-8 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-2xl md:text-3xl font-extrabold font-poppins">Key Benefits</h3>
-                <span className="text-xs md:text-sm px-3 py-1 rounded-full bg-white/60 text-primary font-medium">Everyday comfort & confidence</span>
+            <div className="rounded-2xl sm:rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/10 via-secondary/10 to-background shadow-soft p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+                <h3 className="text-xl sm:text-2xl font-extrabold font-poppins">Key Benefits</h3>
+                <span className="text-xs px-3 py-1 rounded-full bg-white/60 text-primary font-medium w-fit">Everyday comfort & confidence</span>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4 md:gap-5">
+              <div className="grid md:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                 {[
                   "pH-balanced formula for intimate health",
                   "Dermatologically tested and approved",
                   "All-day comfort and freshness",
                   "Made with premium natural ingredients",
                 ].map((benefit, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
-                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                  <div key={i} className="flex items-start gap-2 sm:gap-3">
+                    <span className="mt-0.5 inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm flex-shrink-0">
+                      <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" strokeWidth={3} />
                     </span>
-                    <p className="text-sm md:text-base text-foreground font-nunito">{benefit}</p>
+                    <p className="text-xs sm:text-sm md:text-base text-foreground font-nunito">{benefit}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* How to Use */}
-            <div className="rounded-3xl border border-border/60 bg-white/70 backdrop-blur-md shadow-soft p-6 md:p-8 space-y-6">
-              <h3 className="text-xl md:text-2xl font-extrabold font-poppins">How to Use</h3>
+            <div className="rounded-2xl sm:rounded-3xl border border-border/60 bg-white/70 backdrop-blur-md shadow-soft p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-extrabold font-poppins">How to Use</h3>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {[
                   "Gently cleanse the intimate area with water.",
                   "Apply a small amount of wash, lather, and rinse thoroughly.",
                   "Pat dry and wear panty liners for all-day freshness.",
                   "Use daily for best results and long-lasting comfort.",
                 ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">{i + 1}</span>
-                    <p className="text-sm md:text-base text-muted-foreground font-nunito">{step}</p>
+                  <div key={i} className="flex items-start gap-2 sm:gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold flex-shrink-0">{i + 1}</span>
+                    <p className="text-xs sm:text-sm md:text-base text-muted-foreground font-nunito">{step}</p>
                   </div>
                 ))}
               </div>
@@ -358,7 +371,7 @@ const ProductDetail = () => {
         {/* Feature / Explore Images */}
         {featureImages.length > 0 && (
           <section className="space-y-6 mt-12">
-            <h3 className="text-2xl font-bold font-poppins mt-6">Explore More About {product.title}</h3>
+            <h3 className="text-2xl font-normal font-poppins mt-6">Explore More About {product.title}</h3>
 
             <div className="space-y-6 mt-4">
               {featureImages.map((img: any, index: number) => (

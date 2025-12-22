@@ -24,17 +24,17 @@ const Returns = () => {
             <span className="text-primary text-lg mt-0.5">•</span>
             <span>Wrong product delivered</span>
           </li>
-          <li className="flex items-start gap-3">
+          {/* <li className="flex items-start gap-3">
             <span className="text-primary text-lg mt-0.5">•</span>
             <span>Unopened, unused products with intact seals</span>
-          </li>
+          </li> */}
         </ul>
       </section>
 
       <section className="mb-8">
         <h2 className="text-2xl font-bold mb-4 font-poppins text-primary">Return Window</h2>
         <p className="text-muted-foreground leading-relaxed">
-          You have <strong className="text-foreground">7 days</strong> from the date of delivery to initiate a return request. Please contact us at <strong className="text-foreground">hello@mychumz.com</strong> with your order details and the reason for return.
+          You have <strong className="text-foreground">7 days</strong> from the date of delivery to initiate a return request. Please contact us at <strong className="text-foreground">support@mychumz.com</strong> with your order details and the reason for return.
         </p>
       </section>
 

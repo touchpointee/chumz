@@ -17,7 +17,7 @@ const Shipping = () => {
         </p>
       </section>
 
-      <section className="mb-8">
+      {/* <section className="mb-8">
         <h2 className="text-2xl font-bold mb-4 font-poppins text-primary">Delivery Time</h2>
         <ul className="list-none space-y-3 text-muted-foreground">
           <li className="flex items-start gap-3">
@@ -33,7 +33,7 @@ const Shipping = () => {
             <span><strong className="text-foreground">Remote areas:</strong> 7-10 business days</span>
           </li>
         </ul>
-      </section>
+      </section> */}
 
       <section className="mb-8">
         <h2 className="text-2xl font-bold mb-4 font-poppins text-primary">Shipping Charges</h2>

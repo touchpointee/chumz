@@ -89,7 +89,7 @@ const Privacy = () => {
       <section>
         <h2 className="text-2xl font-bold mb-4 font-poppins text-primary">Contact Us</h2>
         <p className="text-muted-foreground leading-relaxed">
-          If you have any questions about this Privacy Policy, please contact us at <strong className="text-foreground">hello@mychumz.com</strong>
+          If you have any questions about this Privacy Policy, please contact us at <strong className="text-foreground">support@mychumz.com</strong>
         </p>
       </section>
     </PolicyLayout>

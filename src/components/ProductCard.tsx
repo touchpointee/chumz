@@ -12,10 +12,10 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const addItem = useCartStore(state => state.addItem);
-  
+
   const handleAddToCart = () => {
     const firstVariant = product.node.variants.edges[0]?.node;
-    
+
     if (!firstVariant) {
       toast.error("Product unavailable");
       return;
@@ -29,7 +29,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       quantity: 1,
       selectedOptions: firstVariant.selectedOptions || []
     };
-    
+
     addItem(cartItem);
     toast.success("Added to cart! 🎉", {
       description: `${product.node.title} is ready for checkout`,
@@ -59,30 +59,32 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               </div>
             </div>
           )}
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-primary shadow-lg">
-            NEW
-          </div>
+          {product.node.tags && product.node.tags.length > 0 && (
+            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-primary shadow-lg uppercase">
+              {product.node.tags[0]}
+            </div>
+          )}
         </div>
       </Link>
-      
+
       <CardContent className="p-6 space-y-4">
         <Link to={`/product/${product.node.handle}`}>
           <h3 className="font-bold text-xl mb-2 group-hover:text-primary transition-colors font-poppins line-clamp-2">
             {product.node.title}
           </h3>
         </Link>
-        
+
         <div className="flex items-center gap-1 text-yellow-400">
           {[1, 2, 3, 4, 5].map((i) => (
             <Star key={i} className="w-4 h-4 fill-current" />
           ))}
           <span className="text-xs text-muted-foreground ml-2">(4.9)</span>
         </div>
-        
+
         <p className="text-sm text-muted-foreground line-clamp-2 font-nunito">
           {product.node.description || "Premium quality hygiene product for everyday comfort and confidence"}
         </p>
-        
+
         <div className="flex items-end justify-between pt-2">
           <div>
             <p className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -92,7 +94,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           </div>
         </div>
 
-        <Button 
+        <Button
           onClick={handleAddToCart}
           className="w-full group/btn shadow-lg hover:shadow-xl transition-all"
           size="lg"

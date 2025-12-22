@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
-import { getProducts } from "@/lib/shopify";
+import { getProductsFromCollection } from "@/lib/shopify";
 import { Filter, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ShoppingBag, Star, Truck } from "lucide-react";
@@ -11,13 +11,13 @@ import { Shield, Leaf, HeartHandshake } from "lucide-react";
 const Shop = () => {
   const { data: products, isLoading } = useQuery({
     queryKey: ['all-products'],
-    queryFn: () => getProducts(20),
+    queryFn: () => getProductsFromCollection('frontpage', 20),
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-accent/20 to-background">
       <Header />
-      
+
       {/* Hero Section */}
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-hero py-20 md:py-24">
@@ -116,7 +116,7 @@ const Shop = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Products Grid */}
       <div className="container py-16">
         {isLoading ? (
@@ -128,7 +128,7 @@ const Shop = () => {
         ) : products && products.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {products.map((product, i) => (
-              <div 
+              <div
                 key={product.node.id}
                 className="animate-fade-in"
                 style={{ animationDelay: `${i * 50}ms` }}

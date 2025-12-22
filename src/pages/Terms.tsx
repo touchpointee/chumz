@@ -66,7 +66,7 @@ const Terms = () => {
       <section>
         <h2 className="text-2xl font-bold mb-4 font-poppins text-primary">Contact Information</h2>
         <p className="text-muted-foreground leading-relaxed">
-          For any questions regarding these terms, please contact us at <strong className="text-foreground">hello@mychumz.com</strong>
+          For any questions regarding these terms, please contact us at <strong className="text-foreground">support@mychumz.com</strong>
         </p>
       </section>
     </PolicyLayout>

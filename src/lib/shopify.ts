@@ -9,6 +9,7 @@ export interface ShopifyProduct {
     title: string;
     description: string;
     handle: string;
+    tags: string[];
     priceRange: {
       minVariantPrice: {
         amount: string;
@@ -82,6 +83,7 @@ const PRODUCTS_QUERY = `
           title
           description
           handle
+          tags
           priceRange {
             minVariantPrice {
               amount
@@ -129,6 +131,7 @@ export const PRODUCT_BY_HANDLE_QUERY = `#graphql
       id
       title
       description
+      tags
 
       images(first: 10) {
         edges {
@@ -182,6 +185,85 @@ export const PRODUCT_BY_HANDLE_QUERY = `#graphql
 export async function getProducts(limit: number = 20) {
   const data = await storefrontApiRequest(PRODUCTS_QUERY, { first: limit });
   return data.data.products.edges as ShopifyProduct[];
+}
+
+// Collection-based query - products are returned in the order set in Shopify Admin
+const COLLECTION_PRODUCTS_QUERY = `
+  query GetCollectionProducts($handle: String!, $first: Int!) {
+    collectionByHandle(handle: $handle) {
+      id
+      title
+      products(first: $first) {
+        edges {
+          node {
+            id
+            title
+            description
+            handle
+            tags
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            images(first: 5) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            variants(first: 10) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  availableForSale
+                  selectedOptions {
+                    name
+                    value
+                  }
+                }
+              }
+            }
+            options {
+              name
+              values
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+// Fetch products from a specific collection - order is controlled in Shopify Admin
+export async function getProductsFromCollection(collectionHandle: string = 'all-products', limit: number = 20) {
+  try {
+    const data = await storefrontApiRequest(COLLECTION_PRODUCTS_QUERY, {
+      handle: collectionHandle,
+      first: limit
+    });
+
+    // If collection exists and has products, return them
+    if (data.data.collectionByHandle?.products?.edges) {
+      return data.data.collectionByHandle.products.edges as ShopifyProduct[];
+    }
+
+    // Fallback to regular products query if collection not found
+    console.warn(`Collection "${collectionHandle}" not found, falling back to all products`);
+    return getProducts(limit);
+  } catch (error) {
+    console.error('Error fetching collection products:', error);
+    // Fallback to regular products query on error
+    return getProducts(limit);
+  }
 }
 
 export async function getProductByHandle(handle: string) {
@@ -386,4 +468,57 @@ const GET_ORDER_QUERY = `
 export async function getOrder(id: string) {
   const data = await storefrontApiRequest(GET_ORDER_QUERY, { id });
   return data.data.node;
+}
+
+// Newsletter subscription - creates a customer with marketing consent
+const NEWSLETTER_SUBSCRIBE_MUTATION = `
+  mutation customerCreate($input: CustomerCreateInput!) {
+    customerCreate(input: $input) {
+      customer {
+        id
+        email
+      }
+      customerUserErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+export async function subscribeToNewsletter(email: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const data = await storefrontApiRequest(NEWSLETTER_SUBSCRIBE_MUTATION, {
+      input: {
+        email,
+        acceptsMarketing: true,
+        // Generate a random password since it's required but user won't use it
+        password: Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
+      }
+    });
+
+    const result = data.data.customerCreate;
+
+    if (result.customerUserErrors && result.customerUserErrors.length > 0) {
+      const error = result.customerUserErrors[0];
+      // If customer already exists
+      if (error.code === 'TAKEN' || error.message.includes('already')) {
+        return {
+          success: false,
+          message: "This email is already registered. Please log in to your account and enable marketing emails in your profile settings."
+        };
+      }
+      return { success: false, message: error.message };
+    }
+
+    if (result.customer) {
+      return { success: true, message: "Welcome to the Chumz community! 🎉" };
+    }
+
+    return { success: false, message: "Something went wrong. Please try again." };
+  } catch (error) {
+    console.error('Newsletter subscription error:', error);
+    return { success: false, message: "Unable to subscribe. Please try again later." };
+  }
 }

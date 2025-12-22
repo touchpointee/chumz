@@ -1,27 +1,27 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { BookOpen,Heart, Target, Shield, Sparkles } from "lucide-react";
+import { BookOpen, Heart, Target, Shield, Sparkles } from "lucide-react";
 
 const About = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-accent/20 to-background">
       <Header />
-      
+
       {/* Hero Section – styled like Shop All Products banner */}
-     <section className="relative overflow-hidden bg-gradient-hero py-20">
+      <section className="relative overflow-hidden bg-gradient-hero py-20">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00em0tMTIgMGMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0LTEuNzkgNC00IDQtNC0xLjc5LTQtNHptMjQgMjRjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6bS0xMiAwYzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-20" />
-        
+
         <div className="container relative">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
               <BookOpen className="w-5 h-5" />
               <span className="text-sm font-medium">About Chumz</span>
             </div>
-          <h1 className="text-5xl md:text-6xl font-bold font-poppins leading-tight">
-  Get to Know Our {" "}
-  
-  <span
-    className="
+            <h1 className="text-5xl md:text-6xl font-bold font-poppins leading-tight">
+              Get to Know Our {" "}
+
+              <span
+                className="
       relative inline-block 
       px-6 py-2 
       rounded-xl 
@@ -30,18 +30,18 @@ const About = () => {
       border border-white/40
       shadow-[0_0_40px_rgba(255,255,255,0.4)]
     "
-  >
-    <span
-      className="
+              >
+                <span
+                  className="
         bg-gradient-to-r from-primary via-brand-coral to-secondary 
         bg-clip-text text-transparent 
         font-bold
       "
-    >
-      Story
-    </span>
-  </span>
-</h1>
+                >
+                  Story
+                </span>
+              </span>
+            </h1>
 
 
             <p className="text-xl text-foreground/80 font-nunito">
@@ -68,7 +68,7 @@ const About = () => {
               <div className="space-y-4 text-lg text-muted-foreground font-nunito leading-relaxed">
                 <p>
                   Chumz is an Indian women's wellness brand by Redroxz, founded by{" "}
-                  <strong className="text-foreground">Meghala Thalapathy</strong>{" "}
+                  <strong className="text-foreground">Megala Thalapathy</strong>{" "}
                   with a vision to transform women's daily hygiene experience. We
                   believe every woman deserves access to premium quality products
                   that provide comfort, confidence, and care.
@@ -77,7 +77,7 @@ const About = () => {
                   What started as a mission to address the everyday hygiene needs
                   of modern Indian women has grown into a trusted brand that
                   empowers women to embrace their wellness journey with
-                  confidence. Today, over 50,000 women trust Chumz for their
+                  confidence. Today, over 10,000 women trust Chumz for their
                   daily care.
                 </p>
               </div>
@@ -190,14 +190,14 @@ const About = () => {
                   <span className="text-4xl">👩‍💼</span>
                 </div>
                 <h3 className="text-3xl font-bold mb-2 font-poppins">
-                  Meghala Thalapathy
+                  Megala Thalapathy
                 </h3>
                 <p className="text-primary font-semibold mb-6 text-lg">
                   Founder, Chumz by Redroxz
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed font-nunito">
                   Driven by a passion for women's wellness and a commitment to
-                  breaking taboos around feminine hygiene, Meghala founded Chumz
+                  breaking taboos around feminine hygiene, Megala founded Chumz
                   to create products that modern Indian women can trust and rely
                   on every day.
                 </p>
@@ -213,7 +213,7 @@ const About = () => {
             <div className="grid md:grid-cols-3 gap-8 text-center">
               <div>
                 <div className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
-                  50,000+
+                  10,000+
                 </div>
                 <p className="text-muted-foreground font-nunito">
                   Happy Customers
