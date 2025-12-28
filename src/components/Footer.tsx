@@ -64,10 +64,10 @@ export const Footer = () => {
               <li>RED ROXZ, 2/5, Gopalasamy Nagar,<br />Pasumalai, Madurai,<br />Tamil Nadu - 625 004</li>
             </ul>
             <div className="flex gap-4 mt-6">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 transform duration-200" title="Instagram">
+              <a href="https://www.instagram.com/my.chumz?igsh=MTJjc3J2OXIyYXZqcQ==" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 transform duration-200" title="Instagram">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 transform duration-200" title="Facebook">
+              <a href="https://www.facebook.com/mychumz" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 transform duration-200" title="Facebook">
                 <Facebook className="w-5 h-5" />
               </a>
               {/* WhatsApp Icon */}

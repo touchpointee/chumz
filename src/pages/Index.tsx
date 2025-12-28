@@ -680,7 +680,7 @@ const Index = () => {
                 bg-white/95 backdrop-blur-xl
                 border border-brand-pink/30
                 shadow-[0_20px_55px_rgba(15,23,42,0.35)]
-                px-3 py-3 flex items-center gap-2
+                px-3 py-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2
               "
                 >
                   <input
@@ -690,11 +690,12 @@ const Index = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isSubscribing}
                     className="
-                  flex-1 px-4 py-3 rounded-2xl
+                  w-full sm:w-auto sm:flex-1 px-4 py-3 rounded-2xl
                   bg-transparent outline-none
                   text-sm md:text-base
                   text-foreground placeholder:text-foreground/45
                   disabled:opacity-50
+                  text-center sm:text-left
                 "
                   />
                   <Button
@@ -702,8 +703,8 @@ const Index = () => {
                     size="lg"
                     disabled={isSubscribing}
                     className="
-                  relative overflow-hidden
-                  rounded-[1.4rem]
+                  w-full sm:w-auto relative overflow-hidden
+                  rounded-2xl sm:rounded-[1.4rem]
                   px-7 py-3 text-sm md:text-base font-semibold
                   bg-gradient-to-r from-brand-pink via-brand-coral to-brand-purple
                   shadow-[0_14px_32px_rgba(244,114,182,0.65)]

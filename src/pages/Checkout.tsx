@@ -295,9 +295,9 @@ const Checkout = () => {
                       name="customer.name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>Full Name <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input placeholder="Jane Doe" {...field} />
+                            <Input placeholder="Jane Doe" {...field} required />
                           </FormControl>
                         </FormItem>
                       )}
@@ -307,9 +307,9 @@ const Checkout = () => {
                       name="customer.email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Email <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="jane@example.com" {...field} />
+                            <Input type="email" placeholder="jane@example.com" {...field} required />
                           </FormControl>
                         </FormItem>
                       )}
@@ -319,9 +319,9 @@ const Checkout = () => {
                       name="customer.phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input placeholder="+91 9876543210" {...field} />
+                            <Input placeholder="+91 xxxxxxxxxx" {...field} required />
                           </FormControl>
                         </FormItem>
                       )}
@@ -344,9 +344,9 @@ const Checkout = () => {
                         name="shipping.address1"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Address Line 1</FormLabel>
+                            <FormLabel>Address Line 1 <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input placeholder="House number, street" {...field} />
+                              <Input placeholder="House number, street" {...field} required />
                             </FormControl>
                           </FormItem>
                         )}
@@ -370,9 +370,9 @@ const Checkout = () => {
                         name="shipping.city"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>City</FormLabel>
+                            <FormLabel>City <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input placeholder="City" {...field} />
+                              <Input placeholder="City" {...field} required />
                             </FormControl>
                           </FormItem>
                         )}
@@ -382,9 +382,9 @@ const Checkout = () => {
                         name="shipping.state"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>State</FormLabel>
+                            <FormLabel>State <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input placeholder="State" {...field} />
+                              <Input placeholder="State" {...field} required />
                             </FormControl>
                           </FormItem>
                         )}
@@ -394,9 +394,9 @@ const Checkout = () => {
                         name="shipping.postalCode"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Postal Code</FormLabel>
+                            <FormLabel>Postal Code <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input placeholder="PIN code" {...field} />
+                              <Input placeholder="PIN code" {...field} required />
                             </FormControl>
                           </FormItem>
                         )}
@@ -408,9 +408,9 @@ const Checkout = () => {
                         name="shipping.country"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Country</FormLabel>
+                            <FormLabel>Country <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input placeholder="Country" {...field} />
+                              <Input placeholder="Country" {...field} required />
                             </FormControl>
                           </FormItem>
                         )}
