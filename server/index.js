@@ -7,10 +7,67 @@ import { URL } from "url";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import webPush from "web-push";
+import cron from "node-cron";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DIST_DIR = path.join(__dirname, "..", "dist");
+
+// VAPID Setup
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webPush.setVapidDetails(
+    'mailto:support@chumz.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
+// Cron Job: Check for notifications daily at 9 AM
+cron.schedule('0 9 * * *', async () => {
+  console.log("[Cron] Checking for push notifications...");
+  try {
+    // Fetch customers with their metafields
+    // Note: For production, implement pagination (after: cursor)
+    const query = `
+            query {
+                customers(first: 50) {
+                    edges {
+                        node {
+                            id
+                            metafield_notification: metafield(namespace: "custom", key: "notification_date") { value }
+                            metafield_subscription: metafield(namespace: "custom", key: "push_subscription") { value }
+                        }
+                    }
+                }
+            }
+        `;
+    const data = await shopifyGraphql(query, {});
+    const customers = data.customers?.edges || [];
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    for (const { node } of customers) {
+      const notificationDate = node.metafield_notification?.value;
+      const subscriptionJson = node.metafield_subscription?.value;
+
+      if (notificationDate === today && subscriptionJson) {
+        console.log(`[Cron] Triggering notification for customer ${node.id}`);
+        try {
+          const subscription = JSON.parse(subscriptionJson);
+          await webPush.sendNotification(subscription, JSON.stringify({
+            title: "Cycle Alert",
+            body: "Period predicted in 5 days! Time to stock up.",
+            url: "/shop"
+          }));
+        } catch (err) {
+          console.error(`[Cron] Failed to send push to ${node.id}`, err);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[Cron] Error executing job:", error);
+  }
+});
 
 const MIME_TYPES = {
   ".html": "text/html",
@@ -184,6 +241,87 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   // API Routes - handle these first
+  if (req.method === "GET" && url.pathname === "/api/push/public-key") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ publicKey: process.env.VAPID_PUBLIC_KEY }));
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/push/subscribe") {
+    try {
+      const body = await readJson(req);
+      const { customerId, subscription } = body;
+      if (!customerId || !subscription) throw new Error("Missing data");
+
+      // Save subscription to customer metafield
+      const mutation = `
+            mutation updatePushMetafield($input: CustomerInput!) {
+              customerUpdate(input: $input) {
+                userErrors { field message }
+              }
+            }
+          `;
+      const input = {
+        id: customerId,
+        metafields: [{
+          namespace: "custom",
+          key: "push_subscription",
+          value: JSON.stringify(subscription),
+          type: "json"
+        }]
+      };
+      await shopifyGraphql(mutation, { input });
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      console.error("Push subscribe error:", e);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // --- TEST ENDPOINT ---
+  if (req.method === "POST" && url.pathname === "/api/push/trigger-test") {
+    try {
+      const body = await readJson(req);
+      const { customerId } = body;
+      if (!customerId) throw new Error("Missing customerId");
+
+      // 1. Fetch Subscription from Shopify
+      const query = `
+            query getSubscription($id: ID!) {
+              customer(id: $id) {
+                metafield(namespace: "custom", key: "push_subscription") {
+                  value
+                }
+              }
+            }
+          `;
+      const data = await shopifyGraphql(query, { id: customerId });
+      const subscriptionJson = data.customer?.metafield?.value;
+
+      if (!subscriptionJson) throw new Error("No subscription found for this user.");
+
+      // 2. Send Notification
+      const subscription = JSON.parse(subscriptionJson);
+      await webPush.sendNotification(subscription, JSON.stringify({
+        title: "Test Notification",
+        body: "This is a test alert from Chumz! Your notifications are working.",
+        url: "/shop"
+      }));
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      console.error("Test Push Error:", e);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/razorpay/create-order") {
     try {
       const body = await readJson(req);
@@ -259,6 +397,131 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ shopifyOrderId: order.id, shopifyOrderName: order.name }));
     } catch (e) {
       console.error("Error creating order:", e);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(e.message || e) }));
+    }
+    return;
+  }
+
+  // --- NEW: Cycle Tracking Endpoints ---
+
+  if (req.method === "POST" && url.pathname === "/api/cycle/get") {
+    try {
+      const body = await readJson(req);
+      const { customerId } = body;
+      if (!customerId) throw new Error("Missing customerId");
+
+      // Query the metafield from the customer using Admin API
+      // Note: customerId should be the Global ID (gid://shopify/Customer/...)
+      const query = `
+        query getCycleMetafield($id: ID!) {
+          customer(id: $id) {
+            metafield(namespace: "custom", key: "cycle_data") {
+              value
+            }
+          }
+        }
+      `;
+      const data = await shopifyGraphql(query, { id: customerId });
+      const value = data.customer?.metafield?.value;
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ cycleData: value ? JSON.parse(value) : null }));
+    } catch (e) {
+      console.error("Error fetching cycle data:", e);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(e.message || e) }));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/cycle/save") {
+    try {
+      const body = await readJson(req);
+      const { customerId, cycleData, nextPeriodDate, notificationDate } = body;
+      console.log(`[Cycle Save] Attempting to save for customer: ${customerId}`);
+
+      if (!customerId) throw new Error("Missing customerId");
+
+      // Mutation to update/create BOTH metafields: data and prediction
+      const mutation = `
+        mutation updateCycleMetafield($input: CustomerInput!) {
+          customerUpdate(input: $input) {
+            customer {
+              id
+              cycle_data: metafield(namespace: "custom", key: "cycle_data") {
+                value
+              }
+              notification_date: metafield(namespace: "custom", key: "notification_date") {
+                value
+              }
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const metafields = [
+        {
+          namespace: "custom",
+          key: "cycle_data",
+          value: JSON.stringify(cycleData),
+          type: "json"
+        }
+      ];
+
+      // If we have a calculated next date, save it too
+      if (nextPeriodDate) {
+        metafields.push({
+          namespace: "custom",
+          key: "next_period_date",
+          value: nextPeriodDate, // expected format: YYYY-MM-DD
+          type: "date"
+        });
+      }
+
+      // If we have a notification date (Start + 22 days), save it
+      if (notificationDate) {
+        metafields.push({
+          namespace: "custom",
+          key: "notification_date",
+          value: notificationDate, // expected format: YYYY-MM-DD
+          type: "date"
+        });
+      }
+
+      const input = {
+        id: customerId,
+        metafields: metafields
+      };
+
+      console.log(`[Cycle Save] Sending mutation to Shopify...`);
+      const data = await shopifyGraphql(mutation, { input });
+
+      // Log to file for debugging
+      const fs = await import('fs');
+      const logMsg = `[${new Date().toISOString()}] Customer: ${customerId} | Response: ${JSON.stringify(data)}\n`;
+      try { fs.appendFileSync('server/debug.log', logMsg); } catch (e) { }
+
+      console.log(`[Cycle Save] Shopify Response:`, JSON.stringify(data));
+
+      const errors = data.customerUpdate?.userErrors;
+      if (errors && errors.length > 0) {
+        console.error(`[Cycle Save] Shopify UserErrors:`, errors);
+        try { fs.appendFileSync('server/debug.log', `[Error] UserErrors: ${JSON.stringify(errors)}\n`); } catch (e) { }
+        throw new Error(errors.map(e => e.message).join(", "));
+      }
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      console.error("Error saving cycle data:", e);
+      const fs = await import('fs');
+      try { fs.appendFileSync('server/debug.log', `[${new Date().toISOString()}] Exception: ${e.message}\n`); } catch (err) { }
+
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: String(e.message || e) }));
     }

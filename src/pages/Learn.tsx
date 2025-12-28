@@ -1,28 +1,29 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Calendar, HelpCircle } from "lucide-react";
+import { BookOpen, HelpCircle } from "lucide-react";
+import { PeriodTracker } from "@/components/PeriodTracker";
 
 const Learn = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-accent/20 to-background">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-hero py-20">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00em0tMTIgMGMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0LTEuNzkgNC00IDQtNC0xLjc5LTQtNHptMjQgMjRjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6bS0xMiAwYzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-20" />
-        
+
         <div className="container relative">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
               <BookOpen className="w-5 h-5" />
               <span className="text-sm font-medium">Wellness Hub</span>
             </div>
-          <h1 className="text-5xl md:text-6xl font-bold font-poppins leading-tight">
-  Learn &{" "}
-  
-  <span
-    className="
+            <h1 className="text-5xl md:text-6xl font-bold font-poppins leading-tight">
+              Learn &{" "}
+
+              <span
+                className="
       relative inline-block 
       px-6 py-2 
       rounded-xl 
@@ -31,18 +32,18 @@ const Learn = () => {
       border border-white/40
       shadow-[0_0_40px_rgba(255,255,255,0.4)]
     "
-  >
-    <span
-      className="
+              >
+                <span
+                  className="
         bg-gradient-to-r from-primary via-brand-coral to-secondary 
         bg-clip-text text-transparent 
         font-bold
       "
-    >
-      Wellness
-    </span>
-  </span>
-</h1>
+                >
+                  Wellness
+                </span>
+              </span>
+            </h1>
 
 
             <p className="text-xl text-foreground/80 font-nunito">
@@ -131,28 +132,9 @@ const Learn = () => {
           </section>
 
           {/* Period Tracker Section */}
-          <section className="relative">
-            <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-2xl" />
-            <div className="relative bg-gradient-card p-12 rounded-3xl shadow-soft border border-border/50">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-white/50 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                  <Calendar className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-4xl font-bold font-poppins">Period Tracker</h2>
-              </div>
-              <p className="text-lg text-muted-foreground mb-8 font-nunito leading-relaxed">
-                Track your menstrual cycle, understand your body better, and stay prepared for your period. Our period tracker helps you monitor your cycle patterns and symptoms.
-              </p>
-              <div className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl text-center border border-border/30">
-                <div className="text-6xl mb-4">📅</div>
-                <p className="text-muted-foreground mb-4 font-nunito">
-                  <strong className="text-foreground">Coming soon:</strong> Interactive period tracking tool to help you stay organized and prepared
-                </p>
-                <p className="text-sm text-muted-foreground font-nunito">
-                  In the meantime, we recommend noting your cycle dates in your calendar to track patterns
-                </p>
-              </div>
-            </div>
+          <section className="relative scroll-mt-24" id="tracker">
+            <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-2xl -z-10" />
+            <PeriodTracker />
           </section>
 
           {/* FAQ Section */}
@@ -182,8 +164,8 @@ const Learn = () => {
                   a: "Our products are specifically designed for Indian women with premium ingredients, pH-balanced formulations, and a focus on everyday comfort and wellness."
                 }
               ].map((faq, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className="p-8 rounded-2xl border-2 border-border/50 bg-white/50 backdrop-blur-sm hover:border-primary/50 transition-all hover:shadow-lg group"
                 >
                   <h3 className="font-bold text-lg mb-3 font-poppins group-hover:text-primary transition-colors">
