@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { format, addDays, subDays, isSameDay } from "date-fns";
+import { format, addDays, subDays, isSameDay, differenceInDays } from "date-fns";
 import { Calendar as CalendarIcon, Droplets, Info, Edit2, Trash2, Bell } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { getCycleData, saveCycleData, subscribeToPush } from "@/lib/api";
@@ -245,10 +245,25 @@ export function PeriodTracker() {
 
     const nextPeriodPrediction = () => {
         if (cycles.length === 0) return null;
-        // Simple prediction: Last cycle start + 28 days
-        // We need to find the latest start date
+
         const starts = cycles.map(c => new Date(c.startDate)).sort((a, b) => b.getTime() - a.getTime());
-        return addDays(starts[0], 28);
+
+        // Default to 28 days if we don't have enough history
+        let cycleLength = 28;
+
+        // If we have at least 2 cycles, calculate the average cycle length
+        if (starts.length >= 2) {
+            let totalDays = 0;
+            // Calculate differences between consecutive cycles
+            for (let i = 0; i < starts.length - 1; i++) {
+                const current = starts[i];
+                const previous = starts[i + 1];
+                totalDays += differenceInDays(current, previous);
+            }
+            cycleLength = Math.round(totalDays / (starts.length - 1));
+        }
+
+        return addDays(starts[0], cycleLength);
     };
 
     const predictedDate = nextPeriodPrediction();
