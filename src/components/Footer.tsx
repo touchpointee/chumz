@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
-import testimonialGirl1 from "@/assets/testimonial-girl-1.png";
-import testimonialGirl2 from "@/assets/testimonial-girl-2.png";
-import testimonialGirl3 from "@/assets/testimonial-girl-3.png";
-import testimonialGirl4 from "@/assets/testimonial-girl-4.png";
+import testimonialGirl1 from "@/assets/testimonial-girl-1.webp";
+import testimonialGirl2 from "@/assets/testimonial-girl-2.webp";
+import testimonialGirl3 from "@/assets/testimonial-girl-3.webp";
+import testimonialGirl4 from "@/assets/testimonial-girl-4.webp";
 
 export const Footer = () => {
   // WhatsApp config
