@@ -22,7 +22,7 @@ interface CartStore {
   cartId: string | null;
   checkoutUrl: string | null;
   isLoading: boolean;
-  
+
   addItem: (item: CartItem) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   removeItem: (variantId: string) => void;
@@ -116,7 +116,7 @@ async function createStorefrontCheckout(items: CartItem[]): Promise<string> {
     }
 
     const cart = cartData.data.cartCreate.cart;
-    
+
     if (!cart.checkoutUrl) {
       throw new Error('No checkout URL returned from Shopify');
     }
@@ -142,7 +142,24 @@ export const useCartStore = create<CartStore>()(
       addItem: (item) => {
         const { items } = get();
         const existingItem = items.find(i => i.variantId === item.variantId);
-        
+
+        // GTM Add to Cart Event
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          event: "add_to_cart",
+          ecommerce: {
+            currency: item.price.currencyCode,
+            value: parseFloat(item.price.amount) * item.quantity,
+            items: [{
+              item_name: item.product.title,
+              item_id: item.variantId,
+              price: parseFloat(item.price.amount),
+              quantity: item.quantity,
+              item_variant: item.variantTitle
+            }]
+          }
+        });
+
         if (existingItem) {
           set({
             items: items.map(i =>
@@ -161,7 +178,7 @@ export const useCartStore = create<CartStore>()(
           get().removeItem(variantId);
           return;
         }
-        
+
         set({
           items: get().items.map(item =>
             item.variantId === variantId ? { ...item, quantity } : item
@@ -170,8 +187,30 @@ export const useCartStore = create<CartStore>()(
       },
 
       removeItem: (variantId) => {
+        const { items } = get();
+        const itemToRemove = items.find(i => i.variantId === variantId);
+
+        if (itemToRemove) {
+          // GTM Remove from Cart Event
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event: "remove_from_cart",
+            ecommerce: {
+              currency: itemToRemove.price.currencyCode,
+              value: parseFloat(itemToRemove.price.amount) * itemToRemove.quantity,
+              items: [{
+                item_name: itemToRemove.product.title,
+                item_id: itemToRemove.variantId,
+                price: parseFloat(itemToRemove.price.amount),
+                quantity: itemToRemove.quantity,
+                item_variant: itemToRemove.variantTitle
+              }]
+            }
+          });
+        }
+
         set({
-          items: get().items.filter(item => item.variantId !== variantId)
+          items: items.filter(item => item.variantId !== variantId)
         });
       },
 
