@@ -172,8 +172,24 @@ const Checkout = () => {
   useEffect(() => {
     if (items.length === 0) {
       toast.info("Your cart is empty");
+    } else {
+      // GTM Begin Checkout Event
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: "begin_checkout",
+        ecommerce: {
+          currency: totals.currency,
+          value: totals.total,
+          items: items.map(item => ({
+            item_name: item.product.node.title,
+            item_id: item.variantId,
+            price: parseFloat(item.price.amount),
+            quantity: item.quantity
+          }))
+        }
+      });
     }
-  }, [items.length]);
+  }, [items.length, totals]);
 
   const handleRazorpayPay = async () => {
     if (items.length === 0) {
@@ -243,6 +259,26 @@ const Checkout = () => {
             currency: totals.currency || "INR",
             amountPaise,
           });
+
+          // GTM Purchase Event
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event: "purchase",
+            ecommerce: {
+              transaction_id: shopify.shopifyOrderName || response.razorpay_order_id,
+              value: totals.total,
+              tax: 0,
+              shipping: totals.shipping,
+              currency: totals.currency || "INR",
+              items: items.map(item => ({
+                item_name: item.product.node.title,
+                item_id: item.variantId,
+                price: parseFloat(item.price.amount),
+                quantity: item.quantity
+              }))
+            }
+          });
+
           toast.success("Order created", {
             description: shopify.shopifyOrderName ? `Order ${shopify.shopifyOrderName}` : "Shopify order saved",
           });
@@ -259,6 +295,21 @@ const Checkout = () => {
       },
       modal: {
         ondismiss: function () {
+          // GTM Payment Cancel Event
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event: "payment_cancel",
+            ecommerce: {
+              currency: totals.currency,
+              value: totals.total,
+              items: items.map(item => ({
+                item_name: item.product.node.title,
+                item_id: item.variantId,
+                price: parseFloat(item.price.amount),
+                quantity: item.quantity
+              }))
+            }
+          });
           toast.info("Payment window closed");
         },
       },
