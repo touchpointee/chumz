@@ -403,6 +403,176 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // --- Shipping Config Endpoint ---
+  if (req.method === "GET" && url.pathname === "/api/shipping/config") {
+    try {
+      // Initialize defaults
+      let config = {
+        freeShippingThreshold: 100,
+        shippingRate: 50,
+        freeShippingLabel: "Free Shipping",
+        shippingLabel: "Standard Shipping"
+      };
+
+      // Priority 1: Try to fetch from Shopify Delivery Profiles (BEST SOURCE)
+      try {
+        const query = `
+          query {
+            deliveryProfiles(first: 5) {
+              edges {
+                node {
+                  name
+                  profileLocationGroups {
+                    locationGroupZones(first: 5) {
+                      edges {
+                        node {
+                          methodDefinitions(first: 5) {
+                            edges {
+                              node {
+                                name
+                                active
+                                rateProvider {
+                                  ... on DeliveryRateDefinition {
+                                    price { amount }
+                                  }
+                                }
+                                methodConditions {
+                                  field
+                                  operator
+                                  conditionCriteria {
+                                    ... on MoneyV2 { amount }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+        const data = await shopifyGraphql(query, {});
+
+        // Debug
+        // console.log("[Shipping] Profiles raw:", JSON.stringify(data));
+
+        let foundThreshold = null;
+        let foundRate = null;
+
+        const profiles = data.deliveryProfiles?.edges || [];
+        // console.log("[Shipping] Profiles found:", profiles.length);
+
+        for (const profile of profiles) {
+          const locationGroups = profile.node?.profileLocationGroups || [];
+          for (const group of locationGroups) {
+            const zones = group.locationGroupZones?.edges || [];
+            for (const zone of zones) {
+              const methodDefs = zone.node?.methodDefinitions?.edges || [];
+              for (const method of methodDefs) {
+                const node = method.node;
+                if (!node.active) continue;
+
+                const price = parseFloat(node.rateProvider?.price?.amount || "0");
+                // console.log(`[Shipping] Found active method: ${node.name} - Price: ${price}`);
+
+                if (price === 0) {
+                  // Found a free rate, check conditions for threshold
+                  const conditions = node.methodConditions || [];
+                  for (const cond of conditions) {
+                    if (cond.field === "TOTAL_PRICE" && cond.conditionCriteria?.amount) {
+                      foundThreshold = parseFloat(cond.conditionCriteria.amount);
+                    }
+                  }
+                } else {
+                  // Found a paid shipping rate - take the first active paid rate we find as default
+                  if (foundRate === null) {
+                    foundRate = price;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if (foundThreshold !== null) {
+          config.freeShippingThreshold = foundThreshold;
+          config.freeShippingLabel = `Free shipping on orders over ₹${foundThreshold}`;
+        }
+        if (foundRate !== null) {
+          config.shippingRate = foundRate;
+        }
+
+        console.log("[Shipping Config] Fetched from Delivery Profiles:", config);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(config));
+        return;
+
+      } catch (profileError) {
+        console.error("[Shipping Config] Delivery Profiles fetch failed:", profileError.message);
+        // Fallthrough to next methods
+      }
+
+      // Priority 2: Try to fetch from Shopify shop metafield (Legacy)
+      try {
+        const query = `
+          query {
+            shop {
+              metafield(namespace: "custom", key: "shipping_config") {
+                value
+              }
+            }
+          }
+        `;
+        const data = await shopifyGraphql(query, {});
+        const configValue = data.shop?.metafield?.value;
+
+        if (configValue) {
+          const parsed = JSON.parse(configValue);
+          config = { ...config, ...parsed };
+          console.log("[Shipping Config] From Shopify metafield:", config);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(config));
+          return;
+        }
+      } catch (metaError) {
+        // Ignore
+      }
+
+      // Priority 3: Check environment variables
+      const envThreshold = process.env.SHIPPING_FREE_THRESHOLD;
+      const envRate = process.env.SHIPPING_RATE;
+
+      if (envThreshold && envRate) {
+        config.freeShippingThreshold = parseFloat(envThreshold);
+        config.shippingRate = parseFloat(envRate);
+        console.log("[Shipping Config] Using env vars:", config);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(config));
+        return;
+      }
+
+      // Fallback: Return defaults
+      console.log("[Shipping Config] Using defaults:", config);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(config));
+
+    } catch (e) {
+      console.error("[Shipping Config] Critical Error:", e.message);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        freeShippingThreshold: 100,
+        shippingRate: 50,
+        freeShippingLabel: "Free Shipping",
+        shippingLabel: "Standard Shipping"
+      }));
+    }
+    return;
+  }
+
   // --- NEW: Cycle Tracking Endpoints ---
 
   if (req.method === "POST" && url.pathname === "/api/cycle/get") {

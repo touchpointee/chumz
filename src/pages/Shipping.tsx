@@ -1,6 +1,20 @@
 import { PolicyLayout } from "@/components/PolicyLayout";
+import { useEffect, useState } from "react";
 
 const Shipping = () => {
+  const [threshold, setThreshold] = useState(100);
+  const [rate, setRate] = useState(50);
+
+  useEffect(() => {
+    fetch("/api/shipping/config")
+      .then(res => res.json())
+      .then(data => {
+        if (data.freeShippingThreshold) setThreshold(data.freeShippingThreshold);
+        if (data.shippingRate) setRate(data.shippingRate);
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <PolicyLayout title="Shipping Policy">
       <section className="mb-8">
@@ -38,7 +52,7 @@ const Shipping = () => {
       <section className="mb-8">
         <h2 className="text-2xl font-bold mb-4 font-poppins text-primary">Shipping Charges</h2>
         <p className="text-muted-foreground leading-relaxed">
-          We offer <strong className="text-foreground">free shipping</strong> on orders above ₹500. For orders below ₹500, a nominal shipping fee of ₹50 applies.
+          We offer <strong className="text-foreground">free shipping</strong> on orders above ₹{threshold}. For orders below ₹{threshold}, a nominal shipping fee of ₹{rate} applies.
         </p>
       </section>
 

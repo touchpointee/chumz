@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
-import { createRazorpayOrder, createShopifyOrderFromRazorpay } from "@/lib/api";
+import { createRazorpayOrder, createShopifyOrderFromRazorpay, getShippingConfig, ShippingConfig } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 
@@ -109,6 +109,8 @@ async function loadRazorpayScript() {
 const Checkout = () => {
   const { items, clearCart } = useCartStore();
   const [isPaying, setIsPaying] = useState(false);
+  const [shippingConfig, setShippingConfig] = useState<ShippingConfig | null>(null);
+  const [loadingShipping, setLoadingShipping] = useState(true);
 
   const { user, isGuest } = useAuthStore();
   const navigate = useNavigate();
@@ -118,6 +120,28 @@ const Checkout = () => {
       navigate("/login", { state: { from: { pathname: "/checkout" } } });
     }
   }, [user, isGuest, navigate]);
+
+  // Fetch shipping config from Shopify backend
+  useEffect(() => {
+    const fetchShippingConfig = async () => {
+      try {
+        const config = await getShippingConfig();
+        setShippingConfig(config);
+      } catch (error) {
+        console.error("Failed to fetch shipping config:", error);
+        // Use defaults
+        setShippingConfig({
+          freeShippingThreshold: 100,
+          shippingRate: 50,
+          freeShippingLabel: "Free Shipping",
+          shippingLabel: "Standard Shipping"
+        });
+      } finally {
+        setLoadingShipping(false);
+      }
+    };
+    fetchShippingConfig();
+  }, []);
 
   const defaultValues: CheckoutFormValues = {
     customer: {
@@ -164,10 +188,25 @@ const Checkout = () => {
   const totals = useMemo(() => {
     const currency = items[0]?.price.currencyCode || "INR";
     const subTotal = items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0);
-    const shipping = subTotal > 499 ? 0 : 49;
+    const threshold = shippingConfig?.freeShippingThreshold ?? 100;
+    const rate = shippingConfig?.shippingRate ?? 50;
+    const shipping = subTotal > threshold ? 0 : rate;
+    const isFreeShipping = shipping === 0;
+    const amountToFreeShipping = threshold - subTotal;
     const total = subTotal + shipping;
-    return { currency, subTotal, shipping, total };
-  }, [items]);
+    return {
+      currency,
+      subTotal,
+      shipping,
+      total,
+      isFreeShipping,
+      amountToFreeShipping,
+      threshold,
+      shippingLabel: isFreeShipping
+        ? (shippingConfig?.freeShippingLabel ?? "Free Shipping")
+        : (shippingConfig?.shippingLabel ?? "Standard Shipping")
+    };
+  }, [items, shippingConfig]);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -510,11 +549,21 @@ const Checkout = () => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Shipping</span>
-                      <span>
-                        {totals.currency} {totals.shipping.toFixed(2)}
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Shipping</span>
+                        <span className="text-xs text-muted-foreground">
+                          {totals.shippingLabel}
+                        </span>
+                      </div>
+                      <span className={totals.isFreeShipping ? "text-green-600 font-medium" : ""}>
+                        {totals.isFreeShipping ? "FREE" : `${totals.currency} ${totals.shipping.toFixed(2)}`}
                       </span>
                     </div>
+                    {!totals.isFreeShipping && totals.amountToFreeShipping > 0 && (
+                      <p className="text-xs text-primary mt-1">
+                        Add {totals.currency} {totals.amountToFreeShipping.toFixed(2)} more for free shipping!
+                      </p>
+                    )}
                     <div className="flex items-center justify-between font-semibold">
                       <span>Total</span>
                       <span>

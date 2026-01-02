@@ -70,6 +70,27 @@ export async function saveCycleData(customerId: string, cycleData: any, nextPeri
   }
   return res.json() as Promise<{ success: boolean }>;
 }
+
+export type ShippingConfig = {
+  freeShippingThreshold: number;
+  shippingRate: number;
+  freeShippingLabel: string;
+  shippingLabel: string;
+};
+
+export async function getShippingConfig(): Promise<ShippingConfig> {
+  const res = await fetch("/api/shipping/config");
+  if (!res.ok) {
+    // Return defaults on error
+    return {
+      freeShippingThreshold: 100,
+      shippingRate: 50,
+      freeShippingLabel: "Free Shipping",
+      shippingLabel: "Standard Shipping"
+    };
+  }
+  return res.json();
+}
 // Push Notifications
 export async function subscribeToPush(customerId: string) {
   // 1. Get Public Key

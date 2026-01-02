@@ -42,6 +42,18 @@ const ProductDetail = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Shipping config state (must be at top level)
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(100);
+
+  useEffect(() => {
+    fetch("/api/shipping/config")
+      .then(res => res.json())
+      .then(data => {
+        if (data.freeShippingThreshold) setFreeShippingThreshold(data.freeShippingThreshold);
+      })
+      .catch(console.error);
+  }, []);
+
   // lightbox state (must be declared unconditionally with other hooks)
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -149,6 +161,8 @@ const ProductDetail = () => {
   const selectedVariant = product.variants.edges[selectedVariantIndex]?.node;
   const price = selectedVariant ? parseFloat(selectedVariant.price.amount).toFixed(2) : "0.00";
   const currency = selectedVariant?.price?.currencyCode || "USD";
+
+
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -313,7 +327,7 @@ const ProductDetail = () => {
               <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 rounded-2xl sm:rounded-3xl bg-background/90 px-4 py-4 sm:px-6 md:px-8 md:py-5 backdrop-blur">
                 <div className="space-y-1 text-center md:text-left">
                   <p className="text-sm font-semibold text-foreground">Complete your intimate care routine</p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Free shipping on eligible orders · Secure checkout</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Free shipping on orders over ₹{freeShippingThreshold} · Secure checkout</p>
                 </div>
 
                 <Button onClick={handleAddToCart} size="lg" className="w-full md:w-auto text-base md:text-lg px-8 py-5 rounded-2xl shadow-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +24,42 @@ export const CartDrawer = () => {
   const navigate = useNavigate();
   const { items, isLoading, updateQuantity, removeItem, createCheckout } = useCartStore();
   const { user, isGuest } = useAuthStore();
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(499);
+  const [shippingRate, setShippingRate] = useState(0);
+  const [shippingLabel, setShippingLabel] = useState("Standard Shipping");
+
+  // Fetch shipping config on mount and when drawer opens
+  useEffect(() => {
+    const fetchShipping = async () => {
+      try {
+        const res = await fetch("/api/shipping/config");
+        if (res.ok) {
+          const config = await res.json();
+          setFreeShippingThreshold(config.freeShippingThreshold || 499);
+          setShippingRate(config.shippingRate || 0);
+          setShippingLabel(config.shippingLabel || "Standard Shipping");
+        }
+      } catch (e) {
+        console.error("Failed to fetch shipping config:", e);
+      }
+    };
+
+    if (isOpen) {
+      fetchShipping();
+    }
+  }, [isOpen]);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce(
+  const itemsTotalPrice = items.reduce(
     (sum, item) => sum + parseFloat(item.price.amount) * item.quantity,
     0
   );
+
+  // Calculate final totals
+  const isFreeShipping = itemsTotalPrice >= freeShippingThreshold;
+  const shippingCost = isFreeShipping ? 0 : shippingRate;
+  const finalTotalPrice = itemsTotalPrice + shippingCost;
+
   const currencyCode = items[0]?.price.currencyCode || "USD";
 
   const handleCheckoutClick = () => {
@@ -210,27 +240,48 @@ export const CartDrawer = () => {
 
               {/* Footer / summary */}
               <div className="flex-shrink-0 space-y-3 pt-4 mt-2 border-t border-border/60 bg-background/80 backdrop-blur">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Total
-                    </span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-bold">
-                        {currencyCode} {totalPrice.toFixed(2)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        incl. taxes
-                      </span>
-                    </div>
+                <div className="space-y-2">
+                  {/* Subtotal */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-medium">{currencyCode} {itemsTotalPrice.toFixed(2)}</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-emerald-600 font-medium">
-                      Free shipping over ₹499
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Secure Shopify checkout
-                    </p>
+
+                  {/* Shipping */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span className={isFreeShipping ? "text-emerald-600 font-medium" : "font-medium"}>
+                      {isFreeShipping ? "Free" : `${currencyCode} ${shippingCost.toFixed(2)}`}
+                    </span>
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                    <div className="space-y-0.5">
+                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Total
+                      </span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold">
+                          {currencyCode} {finalTotalPrice.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          incl. taxes
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {!isFreeShipping && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Add {currencyCode} {(freeShippingThreshold - itemsTotalPrice).toFixed(2)} for free shipping
+                        </p>
+                      )}
+                      <p className="text-xs text-emerald-600 font-medium h-4">
+                        {isFreeShipping
+                          ? "🎉 You qualify for free shipping!"
+                          : ''}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
